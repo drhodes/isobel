@@ -327,6 +327,39 @@ def test_block_signals_kill():
     assert ":1" in result, f"Expected EPERM(1), got: {result}"
 
 
+def test_worker_state_persists_across_calls():
+    """
+    The dedicated worker keeps its own copy of closure state between calls.
+    Parent state must remain unchanged.
+    """
+    state = {"count": 0}
+
+    @nonet
+    def bump():
+        state["count"] += 1
+        return state["count"]
+
+    assert bump() == 1
+    assert bump() == 2
+    assert state["count"] == 0
+
+
+def test_parent_mutation_after_worker_start_is_not_visible():
+    """
+    Parent-side mutations made after the worker starts do not become visible
+    inside the already-forked worker.
+    """
+    state = {"value": "before"}
+
+    @nonet
+    def read_value():
+        return state["value"]
+
+    assert read_value() == "before"
+    state["value"] = "after"
+    assert read_value() == "before"
+
+
 # these next two tests compliment each other.
 
 def test_mutate_closure1():
@@ -388,5 +421,4 @@ def test_safe_pickle_rce_blocked():
 
     with pytest.raises(pickle.UnpicklingError, match="blocked"):
         return_evil()
-
 

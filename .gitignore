@@ -8,6 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+.uv-cache/
 mitigations/__pycache__
 __pycache__
 .ccls-cache

@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <seccomp.h>
 #include <sys/prctl.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -112,9 +113,11 @@ int install_sandbox_filter(const int *extra_blocked, int extra_count)
     }
 
     seccomp_release(ctx);
-    fprintf(stderr,
-            "[nonet/C] sandbox installed — "
-            "%d built-in + %d extra syscalls blocked\n",
-            ARRAY_LEN(BUILTIN_BLOCKED), extra_count);
+    if (getenv("NONET_QUIET") == NULL) {
+        fprintf(stderr,
+                "[nonet/C] sandbox installed — "
+                "%d built-in + %d extra syscalls blocked\n",
+                ARRAY_LEN(BUILTIN_BLOCKED), extra_count);
+    }
     return 0;
 }
