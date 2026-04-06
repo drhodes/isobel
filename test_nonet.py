@@ -408,6 +408,12 @@ def test_safe_pickle_rce_blocked():
     SafePickle mitigation: returning an object with __reduce__ that calls
     an arbitrary function must raise UnpicklingError in the parent, not
     execute code.
+
+    The canonical network-bypass payload is os.system("curl ...") — the
+    child pickles a __reduce__ that resolves os.system, and the parent would
+    run it in the unrestricted process.  Removing "os" from SAFE_MODULES
+    closes this: find_class("os", "system") raises UnpicklingError before the
+    function is ever invoked.
     """
     import pickle
 
@@ -415,10 +421,11 @@ def test_safe_pickle_rce_blocked():
     def return_evil():
         class EvilPayload:
             def __reduce__(self):
-                # Would run os.system on an unprotected pickle.loads
-                return (__import__("os").getpid, ())
+                # os.system could be replaced with any network call.
+                # Previously "os" was in SAFE_MODULES — this would have
+                # silently succeeded, executing code in the parent.
+                return (__import__("os").system, ("true",))
         return EvilPayload()
 
     with pytest.raises(pickle.UnpicklingError, match="blocked"):
         return_evil()
-

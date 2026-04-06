@@ -10,7 +10,12 @@ BENCH_REPEATS     ?= 7
 BENCH_PLAIN_CALLS ?= 200000
 BENCH_NONET_CALLS ?= 200
 
-.PHONY: all clean test bench benchmark shows
+PROFILE_CALLS     ?= 300
+PROFILE_TOP       ?= 20
+PROFILE_SORT      ?= cumtime
+PROFILE_OUT       ?= profile.speedscope.json
+
+.PHONY: all clean test bench benchmark shows profile flamegraph
 
 all: $(TARGET)
 
@@ -30,3 +35,14 @@ bench benchmark: $(TARGET)
 		--nonet-calls $(BENCH_NONET_CALLS)
 
 shows: benchmark
+
+profile: $(TARGET)
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv run python profile_nonet.py \
+		--calls   $(PROFILE_CALLS) \
+		--top     $(PROFILE_TOP)   \
+		--sort    $(PROFILE_SORT)  \
+		--flamegraph               \
+		--out     $(PROFILE_OUT)
+
+flamegraph: profile
+	npx --yes speedscope $(PROFILE_OUT)

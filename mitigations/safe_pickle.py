@@ -43,7 +43,7 @@ class RestrictedUnpickler(pickle.Unpickler):
 
     #: Modules whose classes are trusted for deserialization.
     #: Users can extend this set before constructing a SafePickle instance.
-    SAFE_MODULES: frozenset[str] = frozenset({
+    SAFE_MODULES: set[str] = {
         # Python built-ins (int, str, list, dict, Exception subclasses …)
         "builtins",
         "_builtins",
@@ -55,17 +55,18 @@ class RestrictedUnpickler(pickle.Unpickler):
         "fractions",
         "pathlib",
         "enum",
-        # Standard exception modules
+        # Standard exception modules — note: "os" is intentionally excluded.
+        # Allowing the os module would let a crafted pickle call os.system(),
+        # os.popen(), etc. and bypass the network sandbox entirely.
         "urllib.error",
         "urllib.request",
         "http.client",
         "socket",
         "ssl",
         "io",
-        "os",
         "concurrent.futures",
         "queue",
-    })
+    }
 
     def find_class(self, module: str, name: str) -> Any:
         if module not in self.SAFE_MODULES:
@@ -81,7 +82,7 @@ class SafePickle(Mitigation):
     name = "safe_pickle"
 
     # Expose the whitelist so callers can add modules without subclassing.
-    SAFE_MODULES = RestrictedUnpickler.SAFE_MODULES
+    SAFE_MODULES: set[str] = RestrictedUnpickler.SAFE_MODULES
 
     def on_parent_result(self, raw: bytes) -> tuple[str, Any] | None:
         return RestrictedUnpickler(io.BytesIO(raw)).load()
