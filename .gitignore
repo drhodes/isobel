@@ -10,3 +10,5 @@ wheels/
 .venv
 mitigations/__pycache__
 __pycache__
+.ccls-cache
+nonet_sandbox.so
