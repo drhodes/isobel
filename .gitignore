@@ -8,3 +8,5 @@ wheels/
 
 # Virtual environments
 .venv
+mitigations/__pycache__
+__pycache__
